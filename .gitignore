@@ -1,0 +1,12 @@
+# Local secrets and overrides — copy from .env.example
+.env
+
+# Binaries
+*.exe
+/effective
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,60 @@
+services:
+  db:
+    image: postgres:16
+    container_name: effective-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: subscriptions_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - effective-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: effective-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:123@db:5432/subscriptions_db?sslmode=disable
+    networks:
+      - effective-network
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: effective-app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://postgres:123@db:5432/subscriptions_db?sslmode=disable
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - effective-network
+
+volumes:
+  db_data:
+
+networks:
+  effective-network:
+    driver: bridge
